@@ -1,14 +1,29 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    addressable (2.3.5)
+    atomic (1.1.14)
+    buftok (0.2.0)
+    descendants_tracker (0.0.3)
+    equalizer (0.0.9)
+    faraday (0.9.0)
+      multipart-post (>= 1.2, < 3)
     ffi (1.9.3)
     hashie (2.0.5)
+    http (0.5.0)
+      http_parser.rb
+    http_parser.rb (0.6.0)
+    json (1.8.1)
     listen (1.0.3)
       rb-fsevent (>= 0.9.3)
       rb-inotify (>= 0.9)
       rb-kqueue (>= 0.2)
+    memoizable (0.4.0)
+      thread_safe (~> 0.1.3)
     minitest (5.2.2)
     multi_json (1.8.4)
+    multipart-post (2.0.0)
+    naught (1.0.0)
     oauth (0.4.7)
     omniauth (1.2.1)
       hashie (>= 1.2, < 3)
@@ -31,11 +46,26 @@ GEM
       ffi (>= 0.5.0)
     rerun (0.8.2)
       listen (~> 1.0.3)
+    simple_oauth (0.2.0)
     sinatra (1.4.4)
       rack (~> 1.4)
       rack-protection (~> 1.4)
       tilt (~> 1.3, >= 1.3.4)
+    thread_safe (0.1.3)
+      atomic
     tilt (1.4.1)
+    twitter (5.6.0)
+      addressable (~> 2.3)
+      buftok (~> 0.2.0)
+      descendants_tracker (~> 0.0.3)
+      equalizer (~> 0.0.9)
+      faraday (~> 0.9.0)
+      http (~> 0.5.0)
+      http_parser.rb (~> 0.6.0)
+      json (~> 1.8)
+      memoizable (~> 0.4.0)
+      naught (~> 1.0)
+      simple_oauth (~> 0.2.0)
 
 PLATFORMS
   ruby
@@ -46,3 +76,4 @@ DEPENDENCIES
   rack-test
   rerun
   sinatra
+  twitter
