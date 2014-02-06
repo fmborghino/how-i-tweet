@@ -1,0 +1,7 @@
+source 'https://rubygems.org'
+ruby '1.9.3'
+gem 'sinatra'
+gem 'omniauth-twitter'
+gem 'rerun'
+gem 'minitest'
+gem 'rack-test'
