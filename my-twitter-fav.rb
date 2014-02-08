@@ -1,8 +1,10 @@
 require 'yaml'
 require 'sinatra/base'
 require 'omniauth-twitter'
+require 'twitter'
 
-class MyApp < Sinatra::Base
+class MyTwitterFav < Sinatra::Base
+  #set :server, 'webrick' # this or start Rack http://stackoverflow.com/a/17335819
   $config = YAML.load_file(File.join(Dir.pwd, 'config.yml'))
   $consumer_key = ENV['TWITTER_CONSUMER_KEY'] || $config[:twitter_consumer_key]
   $consumer_secret = ENV['TWITTER_CONSUMER_SECRET'] || $config[:twitter_consumer_secret]
@@ -23,14 +25,13 @@ class MyApp < Sinatra::Base
 
   get '/profile' do
     halt(401,'Not Authorized') unless admin?
-    require 'twitter'
-    client = Twitter::REST::Client.new do |config|
+    @client ||= Twitter::REST::Client.new do |config|
       config.consumer_key = $consumer_key
       config.consumer_secret = $consumer_secret
       config.oauth_token = session[:access_token]
       config.oauth_token_secret = session[:access_token_secret]
     end
-    "#{client.user.name}"
+    "#{@client.user.name}"
   end
 
   get '/public' do
