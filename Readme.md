@@ -2,6 +2,11 @@
 - Sinatra, OmniAuth, twitter
 - Simple sorted display of all the users you have favorited
 
+### Setup
+- rbenv or rvm
+- gem install bundler
+- bundle install
+
 ### Start with
 TWITTER_CONSUMER_KEY=your_key TWITTER_CONSUMER_SECRET=your_secret rerun rackup
 
