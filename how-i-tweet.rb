@@ -61,9 +61,15 @@ class HowITweet < Sinatra::Base
     # we end up with an array of [ [user1, count1, [user1-tweet1, user1-tweet2, ...] ], ... ] sorted by count
     # this should allow a simple display of top favorited-users, with their count, and drill down to the tweets
     display = raw.group_by {|o| o.user.screen_name }.map{|k,v| [k, v]}.sort_by{|o| o[1].length}.reverse.map{|o| [o[0], o[1].length, o[1]]}
-    CTD + '<br/>' +
-      "size #{raw.length}<br/>" +
-      display.map{|o| "#{o[1]} #{o[0]}" }.join("<br/>")
+    CTD +
+      '<style>a{text-decoration:none}</style>' +
+      '<br/>' +
+      "#favs #{raw.length}<br/>" +
+      "#users #{display.length}<br/><br/>" +
+      display.map{
+        |o| "#{o[1]}&nbsp;<a href=\"https://twitter.com/#{o[0]}\">#{o[0]}</a>" +
+        o[2].map{ |t| "<a href=\"https://twitter.com/#{o[0]}/status/#{t.id}\" title=\"#{t.text}\">*</a>"
+        }.join }.join("<br/>")
   end
 
   get '/profile' do
