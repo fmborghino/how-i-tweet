@@ -5,7 +5,15 @@ require 'twitter'
 
 class HowITweet < Sinatra::Base
   #set :server, 'webrick' # this or start Rack http://stackoverflow.com/a/17335819
-  $secrets = YAML.load_file(File.join(Dir.pwd, 'secrets.yml'))
+  #
+  # recommend keeping secrets.yml in .gitignore
+  secrets = File.join(Dir.pwd, 'secrets.yml')
+  $secrets = if settings.environment == :development and File.exists?(secrets)
+               YAML.load_file(secrets)
+             else
+               {}
+             end
+
   $consumer_key = ENV['TWITTER_CONSUMER_KEY'] || $secrets[:twitter_consumer_key]
   $consumer_secret = ENV['TWITTER_CONSUMER_SECRET'] || $secrets[:twitter_consumer_secret]
   CTD = '<a href="/">continue</a>'
@@ -40,7 +48,7 @@ class HowITweet < Sinatra::Base
 
   get '/favorites' do
     halt(401,'Not Authorized ' + CTD) unless authed?
-    fname = File.join('cache', session[:auth]['name'] + '.yml')
+    fname = File.join('tmp', session[:auth]['name'] + '.yml')
     raw = if File.exists? fname
       YAML::load(File.open(fname))
     else
