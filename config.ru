@@ -1,3 +1,3 @@
-require './my-twitter-fav.rb'
+require './how-i-tweet.rb'
 
-run MyTwitterFav
+run HowITweet

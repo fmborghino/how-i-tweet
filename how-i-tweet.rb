@@ -3,11 +3,11 @@ require 'sinatra/base'
 require 'omniauth-twitter'
 require 'twitter'
 
-class MyTwitterFav < Sinatra::Base
+class HowITweet < Sinatra::Base
   #set :server, 'webrick' # this or start Rack http://stackoverflow.com/a/17335819
-  $config = YAML.load_file(File.join(Dir.pwd, 'config.yml'))
-  $consumer_key = ENV['TWITTER_CONSUMER_KEY'] || $config[:twitter_consumer_key]
-  $consumer_secret = ENV['TWITTER_CONSUMER_SECRET'] || $config[:twitter_consumer_secret]
+  $secrets = YAML.load_file(File.join(Dir.pwd, 'secrets.yml'))
+  $consumer_key = ENV['TWITTER_CONSUMER_KEY'] || $secrets[:twitter_consumer_key]
+  $consumer_secret = ENV['TWITTER_CONSUMER_SECRET'] || $secrets[:twitter_consumer_secret]
   CTD = '<a href="/">continue</a>'
 
   use OmniAuth::Builder do
@@ -21,11 +21,11 @@ class MyTwitterFav < Sinatra::Base
   helpers do
     def authed?
       return session[:auth] &&
-        @client ||= Twitter::REST::Client.new do |config|
-          config.consumer_key = $consumer_key
-          config.consumer_secret = $consumer_secret
-          config.oauth_token = session[:access_token]
-          config.oauth_token_secret = session[:access_token_secret]
+        @client ||= Twitter::REST::Client.new do |secrets|
+          secrets.consumer_key = $consumer_key
+          secrets.consumer_secret = $consumer_secret
+          secrets.oauth_token = session[:access_token]
+          secrets.oauth_token_secret = session[:access_token_secret]
         end
     end
   end
