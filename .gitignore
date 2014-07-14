@@ -1,2 +1,3 @@
 config.yml
 scratch.rb
+cache/*.yml

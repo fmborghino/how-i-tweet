@@ -40,15 +40,22 @@ class MyTwitterFav < Sinatra::Base
 
   get '/favorites' do
     halt(401,'Not Authorized ' + CTD) unless authed?
-    @users = {}
-    @favs = []
-    @favs.push(*@client.favorites(count:200))
-    @favs.each do |e|
-      screen_name = e['user']['screen_name']
-      @users[screen_name] = e['user']
+    fname = session[:auth]['name'] + ".yml"
+    raw = if File.exists? fname
+      YAML::load(File.open(fname))
+    else
+      favs = get_all_favorites
+      File.open(fname, 'w') do |out|
+        YAML::dump(favs, out)
+      end
+      favs
     end
+    # we end up with an array of [ [user1, count1, [user1-tweet1, user1-tweet2, ...] ], ... ] sorted by count
+    # this should allow a simple display of top favorited-users, with their count, and drill down to the tweets
+    display = raw.group_by {|o| o.user.screen_name }.map{|k,v| [k, v]}.sort_by{|o| o[1].length}.reverse.map{|o| [o[0], o[1].length, o[1]]}
     CTD + '<br/>' +
-      "#{@users} "
+      "size #{raw.length}<br/>" +
+      display.map{|o| "#{o[1]} #{o[0]}" }.join("<br/>")
   end
 
   get '/profile' do
@@ -71,7 +78,7 @@ class MyTwitterFav < Sinatra::Base
 
   get '/auth/twitter/callback' do
     halt(401,'Not Authorized ' + CTD) if ! env['omniauth.auth']
-    session[:auth] = true
+    session[:auth] = env['omniauth.auth']['info']
     session[:access_token] = env['omniauth.auth']['credentials']['token']
     session[:access_token_secret] = env['omniauth.auth']['credentials']['secret']
     "<img src='#{env['omniauth.auth']['info']['image']}'> You are logged in #{env['omniauth.auth']['info']['name']}! " + CTD
@@ -87,4 +94,20 @@ class MyTwitterFav < Sinatra::Base
   end
 
   run! if app_file == $0
+
+  private
+  def collect_with_max_id(collection=[], max_id=nil, &block)
+    response = yield(max_id)
+    collection += response
+    response.empty? ? collection.flatten : collect_with_max_id(collection, response.last.id - 1, &block)
+  end
+
+  def get_all_favorites
+    collect_with_max_id do |max_id|
+      options = {:count => 200}
+      options[:max_id] = max_id unless max_id.nil?
+      puts ">>> favorites #{options.inspect}"
+      @client.favorites(options)
+    end
+  end
 end
