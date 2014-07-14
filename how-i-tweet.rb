@@ -24,8 +24,8 @@ class HowITweet < Sinatra::Base
         @client ||= Twitter::REST::Client.new do |secrets|
           secrets.consumer_key = $consumer_key
           secrets.consumer_secret = $consumer_secret
-          secrets.oauth_token = session[:access_token]
-          secrets.oauth_token_secret = session[:access_token_secret]
+          secrets.access_token = session[:access_token]
+          secrets.access_token_secret = session[:access_token_secret]
         end
     end
   end
@@ -40,7 +40,7 @@ class HowITweet < Sinatra::Base
 
   get '/favorites' do
     halt(401,'Not Authorized ' + CTD) unless authed?
-    fname = session[:auth]['name'] + ".yml"
+    fname = File.join('cache', session[:auth]['name'] + '.yml')
     raw = if File.exists? fname
       YAML::load(File.open(fname))
     else
