@@ -2,6 +2,7 @@
 
 ## What we have here
 - Sinatra, OmniAuth, twitter, Heroku
+- As little UI as possible, think CLI level
 - Simple sorted display of all the users you have favorited, explore the
   tweets
 - Other similar tools to follow, include

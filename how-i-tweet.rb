@@ -62,14 +62,22 @@ class HowITweet < Sinatra::Base
     # this should allow a simple display of top favorited-users, with their count, and drill down to the tweets
     display = raw.group_by {|o| o.user.screen_name }.map{|k,v| [k, v]}.sort_by{|o| o[1].length}.reverse.map{|o| [o[0], o[1].length, o[1]]}
     CTD +
-      '<style>a{text-decoration:none}</style>' +
+      '<style>a{text-decoration:none;}td{padding:0 3px 0 0;}</style>' +
       '<br/>' +
       "#favs #{raw.length}<br/>" +
       "#users #{display.length}<br/><br/>" +
-      display.map{
-        |o| "#{o[1]}&nbsp;<a href=\"https://twitter.com/#{o[0]}\">#{o[0]}</a>" +
-        o[2].map{ |t| "<a href=\"https://twitter.com/#{o[0]}/status/#{t.id}\" title=\"#{t.text}\">*</a>"
-        }.join }.join("<br/>")
+      '<table>' + # no really, this is tabular data
+      display.each_with_index.map{|o, i|
+        '<tr>' +
+          "<td>#{i+1}</td>" +
+          "<td>#{o[1]}</td>" +
+          "<td><a href=\"https://twitter.com/#{o[0]}\">#{o[0]}</a></td>" +
+          "<td>" +
+            o[2].map{ |t| "<a href=\"https://twitter.com/#{o[0]}/status/#{t.id}\" title=\"#{t.text}\">*</a>"}.join +
+          '</td>'
+      }.join('<tr/>') +
+      '</table>'
+
   end
 
   get '/profile' do
@@ -78,16 +86,16 @@ class HowITweet < Sinatra::Base
   end
 
   get '/public' do
-    "This is the public page - everybody is welcome! " + CTD
+    'public page ' + CTD
   end
 
   get '/private' do
     halt(401,'Not Authorized') unless authed?
-    "This is the private page - members only " + CTD
+    'private page ' + CTD
   end
 
   get '/login' do
-    redirect to("/auth/twitter")
+    redirect to('/auth/twitter')
   end
 
   get '/auth/twitter/callback' do
@@ -95,7 +103,7 @@ class HowITweet < Sinatra::Base
     session[:auth] = env['omniauth.auth']['info']
     session[:access_token] = env['omniauth.auth']['credentials']['token']
     session[:access_token_secret] = env['omniauth.auth']['credentials']['secret']
-    "<img src='#{env['omniauth.auth']['info']['image']}'> You are logged in #{env['omniauth.auth']['info']['name']}! " + CTD
+    "<img src='#{env['omniauth.auth']['info']['image']}'> Logged in as #{env['omniauth.auth']['info']['name']} " + CTD
   end
 
   get '/auth/failure' do
@@ -104,7 +112,7 @@ class HowITweet < Sinatra::Base
 
   get '/logout' do
     session[:auth] = nil
-    "You are now logged out. " + CTD
+    'You are now logged out. ' + CTD
   end
 
   run! if app_file == $0
@@ -120,7 +128,6 @@ class HowITweet < Sinatra::Base
     collect_with_max_id do |max_id|
       options = {:count => 200}
       options[:max_id] = max_id unless max_id.nil?
-      puts ">>> favorites #{options.inspect}"
       @client.favorites(options)
     end
   end
