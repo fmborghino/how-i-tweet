@@ -36,6 +36,10 @@ class HowITweet < Sinatra::Base
           secrets.access_token_secret = session[:access_token_secret]
         end
     end
+
+    def h(text)
+      Rack::Utils.escape_html(text)
+    end
   end
 
   get '/' do
@@ -73,7 +77,7 @@ class HowITweet < Sinatra::Base
           "<td>#{o[1]}</td>" +
           "<td><a href=\"https://twitter.com/#{o[0]}\">#{o[0]}</a></td>" +
           "<td>" +
-            o[2].map{ |t| "<a href=\"https://twitter.com/#{o[0]}/status/#{t.id}\" title=\"#{t.text}\">*</a>"}.join +
+            o[2].map{ |t| "<a href=\"https://twitter.com/#{o[0]}/status/#{t.id}\" title=\"#{h(t.text)}\">*</a>"}.join +
           '</td>'
       }.join('<tr/>') +
       '</table>'
