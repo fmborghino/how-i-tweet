@@ -156,17 +156,16 @@ class HowITweet < Sinatra::Base
   end
 
   def cache(name)
-    # dev mode only cache to avoid debug-time rate limits
-    # really need a good cache strategy to in-fill possible favs and rts in the middle of the timeline
-    # could use this cheap filesystem cache on heroku as well (good for a few minutes),
-    # but without in-fill it will confuse folks
+    # not-smart cache to avoid rate limits, we dump it after 15 minutes (rate limit window)
+    # really need a good cache strategy allowing in-fill of favs and rts in the middle of the timeline
+    # without in-fill this will confuse folks for now, oh well
     # also not sure that freshness time comparison is going to work reliably, ctime and now same TZ? mebbe :)
+    # note also on Heroku we can sort-of rely on this local tmp/ - it's good enough for now
     fname = File.join('tmp', session[:auth]['nickname'] + '-' + name + '.yml')
-    if settings.environment == :development and File.exists? fname and File.ctime(fname) + (15 * 60) > Time.now
+    if File.exists? fname and File.ctime(fname) + (15 * 60) > Time.now
       YAML::load(File.open(fname))
     else
       items = yield
-      # doesn't hurt on Heroku, and can be handy for troubleshooting
       File.open(fname, 'w') do |out|
         YAML::dump(items, out)
       end
