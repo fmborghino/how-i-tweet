@@ -45,7 +45,7 @@ class HowITweet < Sinatra::Base
 
   get '/' do
     if authed?
-      '<a href="/profile">profile</a><br/>' +
+      #'<a href="/profile">profile</a><br/>' +
       '<a href="/favorites">favorites</a><br/>' +
       '<a href="/retweets">retweets</a><br/>' +
       '<a href="/logout">logout</a><br/>' +
@@ -92,9 +92,10 @@ class HowITweet < Sinatra::Base
     session[:auth] = env['omniauth.auth']['info']
     session[:access_token] = env['omniauth.auth']['credentials']['token']
     session[:access_token_secret] = env['omniauth.auth']['credentials']['secret']
-    CTD +
-        "<br/><img src=\"#{env['omniauth.auth']['info']['image']}\">" +
-        " Logged in as #{env['omniauth.auth']['info']['name']} "
+    # CTD +
+    #     "<br/><img src=\"#{env['omniauth.auth']['info']['image']}\">" +
+    #     " Logged in as #{env['omniauth.auth']['info']['name']} "
+    redirect to('/')
   end
 
   get '/auth/failure' do
@@ -137,15 +138,17 @@ class HowITweet < Sinatra::Base
   end
 
   def render_raw(raw, name)
-    # we end up with an array of [ [user1, count1, [user1-tweet1, user1-tweet2, ...] ], ... ] sorted by count
-    # this should allow a simple display of top favorited-users, with their count, and drill down to the tweets
+    # raw is { user1 => [tweet1, tweet2, ...], user2 ...}
+    # we end up with an array of [ [user1, count1, [user1-tweet1, user1-tweet2, ...] ], [user2, ...] ] sorted by count
+    # this should allow a simple display of top activity by user, with their count, and drill down to the tweets
     # we expect raw to have already been grouped by the relevant user (different for favs and rts)
     display = raw.map{|k,v| [k, v]}
                   .sort_by{|o| o[1].length}
                   .reverse.map{|o| [o[0], o[1].length, o[1]]}
+    raw_count = raw.map{|_,v| v.length}.inject(:+)
     STYLE + CTD +
         '<br/>' +
-        "##{name} #{raw.length}<br/>" +
+        "##{name} #{raw_count}<br/>" +
         "#users #{display.length}<br/><br/>" +
         '<table>' + # no really, this is tabular data
         display.each_with_index.map{|o, i|
