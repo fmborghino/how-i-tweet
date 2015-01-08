@@ -3,7 +3,11 @@ require 'sinatra/base'
 require 'omniauth-twitter'
 require 'twitter'
 
+Dir.glob('./lib/*.rb').each {|f| require f}
+
+
 class HowITweet < Sinatra::Base
+
   #set :server, 'webrick' # this OR start Rack http://stackoverflow.com/a/17335819
 
   # recommend keeping secrets.yml in .gitignore
@@ -38,10 +42,17 @@ class HowITweet < Sinatra::Base
         end
     end
 
+    def link_to_tweet(user, tweet)
+      "<a href=\"https://twitter.com/#{user}/status/#{tweet.id}\" title=\"#{h(tweet.text)}\">*</a>"
+    end
+
     def h(text)
       Rack::Utils.escape_html(text)
     end
+
   end
+
+  helpers DomBuilder
 
   get '/' do
     if authed?
@@ -49,10 +60,10 @@ class HowITweet < Sinatra::Base
       '<a href="/favorites">favorites</a><br/>' +
       '<a href="/retweets">retweets</a><br/>' +
       '<a href="/logout">logout</a><br/>' +
-      '<a href="/about">about<a>'
+      '<a href="/about">about</a>'
     else
       '<a href="/login">login</a><br/>' +
-      '<a href="/about">about<a>'
+      '<a href="/about">about</a>'
     end
   end
 
@@ -142,26 +153,34 @@ class HowITweet < Sinatra::Base
     # we end up with an array of [ [user1, count1, [user1-tweet1, user1-tweet2, ...] ], [user2, ...] ] sorted by count
     # this should allow a simple display of top activity by user, with their count, and drill down to the tweets
     # we expect raw to have already been grouped by the relevant user (different for favs and rts)
-    display = raw.map{|k,v| [k, v]}
-                  .sort_by{|o| o[1].length}
-                  .reverse.map{|o| [o[0], o[1].length, o[1]]}
+
+    display = Hash[raw.sort_by{|user, tweets| -(tweets||[]).length}]
     raw_count = raw.map{|_,v| v.length}.inject(:+)
+    the_table = table do
+      display.each_with_index.map do |(user,tweets), i|
+        ct = tweets.length
+        tr do
+          [
+           td { i+1 },
+           td { ct },
+           td {
+             "<a href=\"https://twitter.com/#{user}\">#{user}</a>"
+           },
+           td { },
+           td {
+             tweets.map{ |t| link_to_tweet(user, t) }.join
+           }
+          ].join
+        end  # end row (tr)
+      end.join
+    end
+
     STYLE + CTD +
-        '<br/>' +
-        "##{name} #{raw_count}<br/>" +
-        "#users #{display.length}<br/><br/>" +
-        '<table>' + # no really, this is tabular data
-        display.each_with_index.map{|o, i|
-          '<tr>' +
-              "<td>#{i+1}</td>" +
-              "<td>#{o[1]}</td>" +
-              "<td><a href=\"https://twitter.com/#{o[0]}\">#{o[0]}</a></td>" +
-              "<td>" +
-              o[2].map{ |t| "<a href=\"https://twitter.com/#{o[0]}/status/#{t.id}\" title=\"#{h(t.text)}\">*</a>"}.join +
-              '</td>'
-        }.join('<tr/>') +
-        '</table>' +
-        '<br/>' + CTD
+      '<br/>' +
+      "##{name} #{raw_count}<br/>" +
+      "#users #{display.length}<br/><br/>" +
+      the_table +
+      '<br/>' + CTD
   end
 
   def cache(name)
