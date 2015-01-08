@@ -4,7 +4,7 @@
 - Sinatra, OmniAuth, twitter gem, Heroku
 - As little UI as possible, think CLI level
 - Simple sorted display of all the users you have favorited or retweeted
-- No real caching and no attention to rate limits, this will blow up (for now)
+- Little attention to rate limits (15 minute dumb cache), this will blow up on large initial datasets (for now)
 - Probably live at http://how-i-tweet.herokuapp.com
 
 ## Setup

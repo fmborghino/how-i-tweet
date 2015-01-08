@@ -45,12 +45,14 @@ class HowITweet < Sinatra::Base
 
   get '/' do
     if authed?
-      '<a href="/profile">profile</a>, ' +
-      '<a href="/favorites">favorites</a>, ' +
-      '<a href="/retweets">retweets</a>, ' +
-      '<a href="/logout">logout</a>'
+      '<a href="/profile">profile</a><br/>' +
+      '<a href="/favorites">favorites</a><br/>' +
+      '<a href="/retweets">retweets</a><br/>' +
+      '<a href="/logout">logout</a><br/>' +
+      '<a href="/about">about<a>'
     else
-      '<a href="/login">login</a>'
+      '<a href="/login">login</a><br/>' +
+      '<a href="/about">about<a>'
     end
   end
 
@@ -102,6 +104,10 @@ class HowITweet < Sinatra::Base
   get '/logout' do
     session[:auth] = nil
     'You are now logged out. ' + CTD
+  end
+
+  get '/about' do
+    redirect 'https://github.com/fmborghino/how-i-tweet'
   end
 
   run! if app_file == $0
