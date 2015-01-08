@@ -1,29 +1,27 @@
 # Simple tools to explore past Twitter activity
 
 ## What we have here
-- Sinatra, OmniAuth, twitter, Heroku
+- Sinatra, OmniAuth, twitter gem, Heroku
 - As little UI as possible, think CLI level
-- Simple sorted display of all the users you have favorited, explore the
-  tweets
-- Other similar tools to follow, include
-    - Sorted display of users you have retweeted and replied to
-    - Search over all your past tweets
+- Simple sorted display of all the users you have favorited or retweeted
+- No real caching and no attention to rate limits, this will blow up (for now)
+- Probably live at http://how-i-tweet.herokuapp.com
 
 ## Setup
-- rbenv or rvm
+- bake your favorite ruby gem env
 - gem install bundler
 - bundle install
 
 ## API Tokens
-Get Twitter app secrets from https://apps.twitter.com/app/new
+Get your own Twitter app tokens from https://apps.twitter.com/app/new
 
 ## Dev mode usage
 TWITTER_CONSUMER_KEY=your_key TWITTER_CONSUMER_SECRET=your_secret rerun rackup
 
-Else set in secrets.yml. Recommend you don't check this in.
+Else set those in secrets.yml. Recommend you don't commit that file!
 
 ## Heroku setup
-Preferably set these with
+Set your secrets with
 
     heroku config:set TWITTER_CONSUMER_KEY=your_key
     heroku config:set TWITTER_CONSUMER_SECRET=your_secret
@@ -37,15 +35,14 @@ Preferably set these with
 Or visit http://your-app-name.herokuapp.com
 
 ## References
-- Handy OmniAuth with Sinatra intro
-  http://www.sitepoint.com/twitter-authentication-in-sinatra/
-- Added twitter gem with controller examples from
-  https://github.com/sferik/sign-in-with-twitter
+- [OmniAuth with Sinatra intro](http://www.sitepoint.com/twitter-authentication-in-sinatra/)
+- [Twitter gem examples](https://github.com/sferik/sign-in-with-twitter)
 
-# TODO
+## Todo
 
-- Pick a cache strategy for Heroku, continue to use file system for dev
-    - S3 https://devcenter.heroku.com/articles/s3
-    - memcachedcloud
-      https://devcenter.heroku.com/articles/memcachedcloud
-    - ironcache https://devcenter.heroku.com/articles/iron_cache
+- Need to handle hitting rate limits
+- Pick a sensible cache strategy that accounts for favs and rts anywhere in the timeline
+- Pick a cache for Heroku (continue to use file system for dev), options...
+    - [S3](https://devcenter.heroku.com/articles/s3)
+    - [memcachedcloud](https://devcenter.heroku.com/articles/memcachedcloud)
+    - [ironcache](https://devcenter.heroku.com/articles/iron_cache)

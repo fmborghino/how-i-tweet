@@ -4,8 +4,8 @@ require 'omniauth-twitter'
 require 'twitter'
 
 class HowITweet < Sinatra::Base
-  #set :server, 'webrick' # this or start Rack http://stackoverflow.com/a/17335819
-  #
+  #set :server, 'webrick' # this OR start Rack http://stackoverflow.com/a/17335819
+
   # recommend keeping secrets.yml in .gitignore
   secrets = File.join(Dir.pwd, 'secrets.yml')
   $secrets = if settings.environment == :development and File.exists?(secrets)
@@ -17,6 +17,7 @@ class HowITweet < Sinatra::Base
   $consumer_key = ENV['TWITTER_CONSUMER_KEY'] || $secrets[:twitter_consumer_key]
   $consumer_secret = ENV['TWITTER_CONSUMER_SECRET'] || $secrets[:twitter_consumer_secret]
   CTD = '<a href="/">continue</a>'
+  STYLE = '<style>a{text-decoration:none;}td{padding:0 3px 0 0;}</style>'
 
   use OmniAuth::Builder do
     provider :twitter, $consumer_key, $consumer_secret
@@ -44,7 +45,10 @@ class HowITweet < Sinatra::Base
 
   get '/' do
     if authed?
-      '<a href="/profile">profile</a>, <a href="/favorites">favorites</a>, <a href="/logout">logout</a>'
+      '<a href="/profile">profile</a>, ' +
+      '<a href="/favorites">favorites</a>, ' +
+      '<a href="/retweets">retweets</a>, ' +
+      '<a href="/logout">logout</a>'
     else
       '<a href="/login">login</a>'
     end
@@ -52,50 +56,29 @@ class HowITweet < Sinatra::Base
 
   get '/favorites' do
     halt(401,'Not Authorized ' + CTD) unless authed?
-    fname = File.join('tmp', session[:auth]['name'] + '.yml')
-    raw = if File.exists? fname
-      YAML::load(File.open(fname))
-    else
-      favs = get_all_favorites
-      File.open(fname, 'w') do |out|
-        YAML::dump(favs, out)
-      end
-      favs
+    raw = cache('favorites') do
+      get_all_favorites
     end
-    # we end up with an array of [ [user1, count1, [user1-tweet1, user1-tweet2, ...] ], ... ] sorted by count
-    # this should allow a simple display of top favorited-users, with their count, and drill down to the tweets
-    display = raw.group_by {|o| o.user.screen_name }.map{|k,v| [k, v]}.sort_by{|o| o[1].length}.reverse.map{|o| [o[0], o[1].length, o[1]]}
-    CTD +
-      '<style>a{text-decoration:none;}td{padding:0 3px 0 0;}</style>' +
-      '<br/>' +
-      "#favs #{raw.length}<br/>" +
-      "#users #{display.length}<br/><br/>" +
-      '<table>' + # no really, this is tabular data
-      display.each_with_index.map{|o, i|
-        '<tr>' +
-          "<td>#{i+1}</td>" +
-          "<td>#{o[1]}</td>" +
-          "<td><a href=\"https://twitter.com/#{o[0]}\">#{o[0]}</a></td>" +
-          "<td>" +
-            o[2].map{ |t| "<a href=\"https://twitter.com/#{o[0]}/status/#{t.id}\" title=\"#{h(t.text)}\">*</a>"}.join +
-          '</td>'
-      }.join('<tr/>') +
-      '</table>'
 
+    raw = raw.group_by {|o| o.user.screen_name }
+    render_raw(raw, 'favorites')
+  end
+
+  get '/retweets' do
+    halt(401,'Not Authorized ' + CTD) unless authed?
+    raw = cache('retweets') do
+      get_all_retweets
+    end
+
+    raw = raw.group_by {|o| o.retweeted_status.user.screen_name }
+    render_raw(raw, 'retweets')
   end
 
   get '/profile' do
     halt(401,'Not Authorized ' + CTD) unless authed?
-    "#{@client.user.name} " + CTD
-  end
-
-  get '/public' do
-    'public page ' + CTD
-  end
-
-  get '/private' do
-    halt(401,'Not Authorized') unless authed?
-    'private page ' + CTD
+    CTD +
+        "<br/><img src=\"#{@client.user.profile_image_uri}\"> #{@client.user.name} " +
+        "<br/>#{@client.user.description}"
   end
 
   get '/login' do
@@ -107,7 +90,9 @@ class HowITweet < Sinatra::Base
     session[:auth] = env['omniauth.auth']['info']
     session[:access_token] = env['omniauth.auth']['credentials']['token']
     session[:access_token_secret] = env['omniauth.auth']['credentials']['secret']
-    "<img src='#{env['omniauth.auth']['info']['image']}'> Logged in as #{env['omniauth.auth']['info']['name']} " + CTD
+    CTD +
+        "<br/><img src=\"#{env['omniauth.auth']['info']['image']}\">" +
+        " Logged in as #{env['omniauth.auth']['info']['name']} "
   end
 
   get '/auth/failure' do
@@ -133,6 +118,59 @@ class HowITweet < Sinatra::Base
       options = {:count => 200}
       options[:max_id] = max_id unless max_id.nil?
       @client.favorites(options)
+    end
+  end
+
+  def get_all_retweets
+    # this is going to hit a 3,200 tweet limit defined by the API as it grabs these from the entire timeline :(
+    collect_with_max_id do |max_id|
+      options = {:count => 200}
+      options[:max_id] = max_id unless max_id.nil?
+      @client.retweeted_by_me(options)
+    end
+  end
+
+  def render_raw(raw, name)
+    # we end up with an array of [ [user1, count1, [user1-tweet1, user1-tweet2, ...] ], ... ] sorted by count
+    # this should allow a simple display of top favorited-users, with their count, and drill down to the tweets
+    # we expect raw to have already been grouped by the relevant user (different for favs and rts)
+    display = raw.map{|k,v| [k, v]}
+                  .sort_by{|o| o[1].length}
+                  .reverse.map{|o| [o[0], o[1].length, o[1]]}
+    STYLE + CTD +
+        '<br/>' +
+        "##{name} #{raw.length}<br/>" +
+        "#users #{display.length}<br/><br/>" +
+        '<table>' + # no really, this is tabular data
+        display.each_with_index.map{|o, i|
+          '<tr>' +
+              "<td>#{i+1}</td>" +
+              "<td>#{o[1]}</td>" +
+              "<td><a href=\"https://twitter.com/#{o[0]}\">#{o[0]}</a></td>" +
+              "<td>" +
+              o[2].map{ |t| "<a href=\"https://twitter.com/#{o[0]}/status/#{t.id}\" title=\"#{h(t.text)}\">*</a>"}.join +
+              '</td>'
+        }.join('<tr/>') +
+        '</table>' +
+        '<br/>' + CTD
+  end
+
+  def cache(name)
+    # dev mode only cache to avoid debug-time rate limits
+    # really need a good cache strategy to in-fill possible favs and rts in the middle of the timeline
+    # could use this cheap filesystem cache on heroku as well (good for a few minutes),
+    # but without in-fill it will confuse folks
+    # also not sure that freshness time comparison is going to work reliably, ctime and now same TZ? mebbe :)
+    fname = File.join('tmp', session[:auth]['nickname'] + '-' + name + '.yml')
+    if settings.environment == :development and File.exists? fname and File.ctime(fname) + (15 * 60) > Time.now
+      YAML::load(File.open(fname))
+    else
+      items = yield
+      # doesn't hurt on Heroku, and can be handy for troubleshooting
+      File.open(fname, 'w') do |out|
+        YAML::dump(items, out)
+      end
+      items
     end
   end
 end
