@@ -166,7 +166,6 @@ class HowITweet < Sinatra::Base
            td {
              "<a href=\"https://twitter.com/#{user}\">#{user}</a>"
            },
-           td { },
            td {
              tweets.map{ |t| link_to_tweet(user, t) }.join
            }
