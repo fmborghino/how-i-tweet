@@ -52,7 +52,7 @@ class HowITweet < Sinatra::Base
 
     def log(tag, msg=nil)
       user = authed? ? @client.user.screen_name : '-'
-      request.logger.info 'APP %s %s %s' % [tag, user, msg]
+      request.logger.info 'APPLOG %s %s %s' % [tag, user, msg]
     end
   end
 
