@@ -28,7 +28,7 @@ class HowITweet < Sinatra::Base
   end
 
   configure do
-    enable :sessions
+    enable :sessions, :logging
   end
 
   helpers do
@@ -50,11 +50,16 @@ class HowITweet < Sinatra::Base
       Rack::Utils.escape_html(text)
     end
 
+    def log(tag, msg=nil)
+      user = authed? ? @client.user.screen_name : '-'
+      request.logger.info 'APP %s %s %s' % [tag, user, msg]
+    end
   end
 
   helpers DomBuilder
 
   get '/' do
+    log 'root'
     if authed?
       #'<a href="/profile">profile</a><br/>' +
       '<a href="/favorites">favorites</a><br/>' +
@@ -68,6 +73,7 @@ class HowITweet < Sinatra::Base
   end
 
   get '/favorites' do
+    log 'favorites'
     halt(401,'Not Authorized ' + CTD) unless authed?
     raw = cache('favorites') do
       get_all_favorites
@@ -78,6 +84,7 @@ class HowITweet < Sinatra::Base
   end
 
   get '/retweets' do
+    log 'retweets'
     halt(401,'Not Authorized ' + CTD) unless authed?
     raw = cache('retweets') do
       get_all_retweets
@@ -88,6 +95,7 @@ class HowITweet < Sinatra::Base
   end
 
   get '/profile' do
+    log 'profile'
     halt(401,'Not Authorized ' + CTD) unless authed?
     CTD +
         "<br/><img src=\"#{@client.user.profile_image_uri}\"> #{@client.user.name} " +
@@ -95,6 +103,7 @@ class HowITweet < Sinatra::Base
   end
 
   get '/login' do
+    log 'login'
     redirect to('/auth/twitter')
   end
 
@@ -114,11 +123,13 @@ class HowITweet < Sinatra::Base
   end
 
   get '/logout' do
+    log 'logout'
     session[:auth] = nil
     'You are now logged out. ' + CTD
   end
 
   get '/about' do
+    log 'about'
     redirect 'https://github.com/fmborghino/how-i-tweet'
   end
 
