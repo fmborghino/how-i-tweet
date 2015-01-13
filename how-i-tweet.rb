@@ -62,8 +62,9 @@ class HowITweet < Sinatra::Base
     log 'root'
     if authed?
       #'<a href="/profile">profile</a><br/>' +
-      '<a href="/favorites">favorites</a><br/>' +
-      '<a href="/retweets">retweets</a><br/>' +
+      '<a href="/favorites">favorites by me</a><br/>' +
+      '<a href="/retweets">retweets by me</a><br/>' +
+      '<a href="/mentions_of_me">mentions of me</a><br/>' +
       '<a href="/logout">logout</a><br/>' +
       '<a href="/about">about</a>'
     else
@@ -80,7 +81,7 @@ class HowITweet < Sinatra::Base
     end
 
     raw = raw.group_by {|o| o.user.screen_name }
-    render_raw(raw, 'favorites')
+    render_raw(raw, 'favorites', 'who have I favorited the most?')
   end
 
   get '/retweets' do
@@ -91,7 +92,18 @@ class HowITweet < Sinatra::Base
     end
 
     raw = raw.group_by {|o| o.retweeted_status.user.screen_name }
-    render_raw(raw, 'retweets')
+    render_raw(raw, 'retweets', 'who have I retweeted the most?')
+  end
+
+  get '/mentions_of_me' do
+    log 'mentions_of_me'
+    halt(401,'Not Authorized ' + CTD) unless authed?
+    raw = cache('mentions_of_me') do
+      get_all_mentions_of_me
+    end
+
+    raw = raw.group_by {|o| o.user.screen_name }
+    render_raw(raw, 'mentions of me', 'who has mentioned me the most?')
   end
 
   get '/profile' do
@@ -159,9 +171,18 @@ class HowITweet < Sinatra::Base
     end
   end
 
-  def render_raw(raw, name)
+  def get_all_mentions_of_me
+    # this is going to hit a hard 800 tweet limit defined by the API
+    collect_with_max_id do |max_id|
+      options = {:count => 200}
+      options[:max_id] = max_id unless max_id.nil?
+      @client.mentions_timeline(options)
+    end
+  end
+
+  def render_raw(raw, name, hint)
     # raw is { user1 => [tweet1, tweet2, ...], user2 ...}
-    # we end up with an array of [ [user1, count1, [user1-tweet1, user1-tweet2, ...] ], [user2, ...] ] sorted by count
+    # we sort by count of tweets
     # this should allow a simple display of top activity by user, with their count, and drill down to the tweets
     # we expect raw to have already been grouped by the relevant user (different for favs and rts)
 
@@ -186,6 +207,8 @@ class HowITweet < Sinatra::Base
     end
 
     STYLE + CTD +
+      '<br/>' +
+      "#{hint}" +
       '<br/>' +
       "##{name} #{raw_count}<br/>" +
       "#users #{display.length}<br/><br/>" +
