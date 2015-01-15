@@ -3,6 +3,8 @@ require 'sinatra/base'
 require 'omniauth-twitter'
 require 'twitter'
 
+require 'better_errors'
+
 Dir.glob('./lib/*.rb').each {|f| require f}
 
 
@@ -29,6 +31,19 @@ class HowITweet < Sinatra::Base
 
   configure do
     enable :sessions, :logging
+  end
+
+
+# Just in development!
+  configure :development do
+    use BetterErrors::Middleware
+    # you need to set the application root in order to abbreviate filenames
+    # within the application:
+    BetterErrors.application_root = File.expand_path('..', __FILE__)
+  end
+
+  def twitter_client= (client)
+    @client = client
   end
 
   helpers do

@@ -5,7 +5,7 @@
 - As little UI as possible, think CLI level
 - Simple sorted display of all the users you have favorited or retweeted
 - Little attention to rate limits (15 minute dumb cache), this will blow up on large initial datasets (for now)
-- Probably live at http://how-i-tweet.herokuapp.com
+- Probably live at http://howitweet.herokuapp.com
 
 ## Setup
 - bake your favorite ruby gem env

@@ -6,3 +6,5 @@ gem 'twitter'
 gem 'rerun'
 gem 'minitest'
 gem 'rack-test'
+
+gem 'better_errors'
